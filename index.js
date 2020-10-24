@@ -1,7 +1,7 @@
 let boxSize = 32;
 let borderSize = 2;
 let gridCount = 13;
-let speed = 1000;
+let speed = 500;
 let processGame;
 let snake = createSnakeData(Math.floor(gridCount / 2), Math.floor(gridCount / 2), 5);
 let food = createFood();
@@ -14,6 +14,26 @@ document.addEventListener('keydown', snakeHandler);
 
 function snakeHandler(event) {
     updateDirection(event);
+}
+
+function startHandler(event) {
+    startGame();
+
+    let endBtn = document.getElementById('end-game');
+
+    event.currentTarget.style = 'display: none';
+    endBtn.style = 'display: block';
+}
+
+function endHandler(event) {
+    let messageMox = find('#message');
+
+    endGame(messageMox);
+
+    let startBtn = document.getElementById('start-game');
+
+    event.currentTarget.style = 'display: none';
+    startBtn.style = 'display: block';
 }
 
 function updateDirection(event) {
@@ -34,16 +54,16 @@ function init() {
     gridContainer = find('#snake-container');
     let messageMox = find('#message');
     let score = find('.score > b');
+    let startBtn = document.getElementById('start-game');
+    let endBtn = document.getElementById('end-game');
 
     initGrid(gridCount, gridContainer);
-    
-    // ----------------------------------------------
-    // startBtn.addEventListener('click', startHandler);
-    // endBtn.addEventListener('click', endHandler);
-    // игра должнв стартовать и заканчиватся по клику на кнопки 
-    // ----------------------------------------------
 
-    startGame();
+    // ----------------------------------------------
+    startBtn.addEventListener('click', startHandler);
+    endBtn.addEventListener('click', endHandler);
+    // игра должна стартовать и заканчиватся по клику на кнопки 
+    // ----------------------------------------------
 }
 
 function createSnakeData(cell, row, count) {
@@ -118,7 +138,7 @@ function startGame() {
         }
 
         snake.pop()
-        console.log(snake[0].cell, snake.length);
+        //console.log(snake[0].cell, snake.length);
         updateSnake();
     }, speed);
 
@@ -126,12 +146,13 @@ function startGame() {
 
     function updateSnake() {
         clearSnake();
+
         // ---------------------------------------
         // написать ф-цию checkOnEated, которая проверяет съела ли змейка еду,
         // если да - убираем фрукт добавляет +1 в хвост и в score, а также генерируем новые координаты для еды
-        // checkOnEated(randomBox.dataset);
+        checkOnEated(randomBox.dataset);
         // ----------------------------------
-
+        
 
         // ----------------------------------
         // написать ф-цию checkOnTailCrush, которая проверяет врезалась ли голова змейки в себя же, если да - завершить игру
@@ -146,6 +167,27 @@ function startGame() {
                 cell.classList.add('snake-body', 'snake');
             }
 
+        }
+    }
+
+    function checkOnEated(dataset) {
+        let score = find('.score > b');
+
+        let addScore = Number.parseInt(score.textContent);
+
+        if (snake[0].cell == dataset.cell && snake[0].row == dataset.row) {
+            randomBox.removeChild(food);
+            
+            snake.push({
+                cell: snake[snake.length - 1].cell + 1,
+                row: snake[snake.length - 1].row
+            });
+
+            addScore++;
+
+            score.textContent = addScore;
+
+            randomBox = generateBoxForEat();
         }
     }
 
@@ -174,9 +216,13 @@ function startGame() {
 // ----------------------------------
 // дополнить эту функцию - вернуть все данные в начальное состояние
 // и использовать функцию во всех случаях. где игра завершается
-// function endGame(message = 'Game Over!') {
-//     clearTimeout(processGame);
-// }
+function endGame(message) {
+    message.textContent = 'Game Over!';
+
+    clearTimeout(processGame);
+
+    snake = createSnakeData(Math.floor(gridCount / 2), Math.floor(gridCount / 2), 5);
+}
 // ----------------------------------
 
 
