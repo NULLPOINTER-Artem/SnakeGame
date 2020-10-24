@@ -19,7 +19,10 @@ function snakeHandler(event) {
 function startHandler(event) {
     startGame();
 
+    let score = find('.score > b');
     let endBtn = document.getElementById('end-game');
+
+    score.textContent = '0';
 
     event.currentTarget.style = 'display: none';
     endBtn.style = 'display: block';
@@ -221,6 +224,7 @@ function endGame(message) {
 
     clearTimeout(processGame);
 
+    direction = 'left';
     snake = createSnakeData(Math.floor(gridCount / 2), Math.floor(gridCount / 2), 5);
 }
 // ----------------------------------
