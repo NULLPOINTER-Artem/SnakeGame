@@ -1,14 +1,21 @@
 let boxSize = 32;
 let borderSize = 2;
 let gridCount = 13;
-let speed = 500;
+
+let speed = 1000;
+
 let processGame;
 let snake = createSnakeData(Math.floor(gridCount / 2), Math.floor(gridCount / 2), 5);
 let food = createFood();
 let direction = 'left';
-let gridContainer;
 
-console.log(snake);
+let gridContainer;
+let messageBox;
+let score;
+
+let startBtn;
+let endBtn;
+
 document.addEventListener('DOMContentLoaded', init);
 document.addEventListener('keydown', snakeHandler);
 
@@ -29,9 +36,7 @@ function startHandler(event) {
 }
 
 function endHandler(event) {
-    let messageMox = find('#message');
-
-    endGame(messageMox);
+    endGame();
 
     let startBtn = document.getElementById('start-game');
 
@@ -40,7 +45,6 @@ function endHandler(event) {
 }
 
 function updateDirection(event) {
-    console.log(event.keyCode);
     if (event.keyCode == 37 && direction != 'right')
         direction = 'left';
     if (event.keyCode == 38 && direction != 'down')
@@ -51,22 +55,26 @@ function updateDirection(event) {
         direction = 'down';
 }
 
-
+function initSpeed() {
+    [].forEach.call(speedOptions.children, (item) => {
+        if (item.selected) {
+            speed = item.value;
+        }
+    })
+}
 
 function init() {
     gridContainer = find('#snake-container');
-    let messageMox = find('#message');
-    let score = find('.score > b');
-    let startBtn = document.getElementById('start-game');
-    let endBtn = document.getElementById('end-game');
+    messageBox = find('#message');
+    speedOptions = find('#stacked-state');
+    score = find('.score > b');
+    startBtn = document.getElementById('start-game');
+    endBtn = document.getElementById('end-game');
 
     initGrid(gridCount, gridContainer);
 
-    // ----------------------------------------------
     startBtn.addEventListener('click', startHandler);
     endBtn.addEventListener('click', endHandler);
-    // игра должна стартовать и заканчиватся по клику на кнопки 
-    // ----------------------------------------------
 }
 
 function createSnakeData(cell, row, count) {
@@ -93,21 +101,14 @@ function createFood() {
 
 function startGame() {
     let randomBox = generateBoxForEat();
+    initSpeed();
 
     updateSnake();
     processGame = setInterval(() => {
         let {
             cell,
             row
-        } = snake[0];
-
-        // ----------------------------------
-        // Нужно чтобы ф-ция noWallMode (реализует возможность змейки проходить через стены) работала так
-        // let {
-        //     cell,
-        //     row
-        // } = noWallMode(snake[0])
-        // ----------------------------------
+        } = noWallMode(snake[0]);
 
         switch (direction) {
             case 'left': {
@@ -141,7 +142,6 @@ function startGame() {
         }
 
         snake.pop()
-        //console.log(snake[0].cell, snake.length);
         updateSnake();
     }, speed);
 
@@ -150,32 +150,58 @@ function startGame() {
     function updateSnake() {
         clearSnake();
 
-        // ---------------------------------------
-        // написать ф-цию checkOnEated, которая проверяет съела ли змейка еду,
-        // если да - убираем фрукт добавляет +1 в хвост и в score, а также генерируем новые координаты для еды
         checkOnEated(randomBox.dataset);
-        // ----------------------------------
-        
 
-        // ----------------------------------
-        // написать ф-цию checkOnTailCrush, которая проверяет врезалась ли голова змейки в себя же, если да - завершить игру
-        // checkOnTailCrush();
-        // ---------------------------------------
-
-        for (const [index, snakePart] of snake.entries()) {
-            let cell = findByCoords(snakePart.cell, snakePart.row);
-            if (index == 0) {
-                cell.classList.add('snake-head', 'snake');
-            } else {
-                cell.classList.add('snake-body', 'snake');
+        if (!checkOnTailCrush()) {
+            for (const [index, snakePart] of snake.entries()) {
+                let cell = findByCoords(snakePart.cell, snakePart.row);
+                if (cell) {
+                    if (index == 0) {
+                        cell.classList.add('snake-head', 'snake');
+                    } else {
+                        cell.classList.add('snake-body', 'snake');
+                    }
+                }
             }
-
         }
     }
 
-    function checkOnEated(dataset) {
-        let score = find('.score > b');
+    function noWallMode(headSnake) {
+        if (headSnake.cell <= -1) {
+            headSnake.cell = gridCount;
+        } else if (headSnake.cell >= gridCount) {
+            headSnake.cell = -1;
+        }
 
+        if (headSnake.row <= -1) {
+            headSnake.row = gridCount;
+        } else if (headSnake.row >= gridCount) {
+            headSnake.row = -1;
+        }
+
+        return headSnake;
+    }
+
+    function checkOnTailCrush() {
+        let crushed = false;
+        let headCell = snake[0].cell;
+        let headRow = snake[0].row;
+
+        for (let i = 1; i < snake.length; i++) {
+            if (headCell == snake[i].cell && headRow == snake[i].row) {
+                endGame();
+
+                endBtn.style = 'display: none';
+                startBtn.style = 'display: block';
+
+                crushed = true;
+            }
+        }
+
+        return crushed;
+    }
+
+    function checkOnEated(dataset) {
         let addScore = Number.parseInt(score.textContent);
 
         if (snake[0].cell == dataset.cell && snake[0].row == dataset.row) {
@@ -194,14 +220,6 @@ function startGame() {
         }
     }
 
-    function clearSnake() {
-        let cells = gridContainer.querySelectorAll('.snake');
-        for (const cell of cells) {
-            cell.className = 'snake-cell';
-        }
-        // debugger;
-    }
-
     function generateBoxForEat() {
         let cell = getRandomInt(0, gridCount);
         let row = getRandomInt(0, gridCount);
@@ -216,19 +234,24 @@ function startGame() {
 
 
 }
-// ----------------------------------
-// дополнить эту функцию - вернуть все данные в начальное состояние
-// и использовать функцию во всех случаях. где игра завершается
-function endGame(message) {
-    message.textContent = 'Game Over!';
+
+function endGame() {
+    messageBox.textContent = 'Game Over!';
 
     clearTimeout(processGame);
+
+    clearSnake();
 
     direction = 'left';
     snake = createSnakeData(Math.floor(gridCount / 2), Math.floor(gridCount / 2), 5);
 }
-// ----------------------------------
 
+function clearSnake() {
+    let cells = gridContainer.querySelectorAll('.snake');
+    for (const cell of cells) {
+        cell.className = 'snake-cell';
+    }
+}
 
 function initGrid(gridCount, target) {
     target.style.width = target.style.height = (boxSize * gridCount) + 'px';
